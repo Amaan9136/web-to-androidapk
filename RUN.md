@@ -213,17 +213,19 @@ nothing extra to configure:
   user's real browser (or, on the rare `fallbackType: "webview"` fallback,
   through `android.webkit.WebView`), and both honor the page's own
   `<meta name="viewport">` tag exactly like any browser tab would. `npm run
-  check-viewport` (also run automatically, as a warning, before every build)
-  fetches your live site and fails loudly if it isn't found. If it's
-  missing, add this to the `<head>` of every page on your site:
+  check-viewport` (also run automatically, and --strict by default, before
+  every build) fetches your live site and now ABORTS the build if a
+  zoom-disabling viewport tag isn't found - zoom must never be possible in
+  a generated app. If it's missing, add this to the `<head>` of every page
+  on your site:
   ```html
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   ```
   Run it manually any time with:
   ```bash
-  npm run check-viewport -- --profile myapp
-  # or fail the command instead of just warning:
   npm run check-viewport -- --profile myapp --strict
+  # or explicitly opt out of the build-blocking behavior:
+  npm run build -- --profile myapp --allow-zoom
   ```
 
 ---

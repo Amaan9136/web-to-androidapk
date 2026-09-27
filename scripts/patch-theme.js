@@ -5,7 +5,7 @@
  * already themes most of the generated project from the profile's
  * themeColor/navigationColor/backgroundColor (status bar, nav bar, splash
  * background, colorPrimary/colorAccent) because those are passed straight
- * into TwaManifest in scripts/init.js. Two spots are left on their default
+ * into TwaManifest in scripts/init.js. Four spots are left on their default
  * (non-themed) values by the stock Bubblewrap template and are the most
  * common source of "default Android/browser look" complaints in a TWA:
  *
@@ -16,8 +16,16 @@
  *   2. Notifications posted through the TWA notification delegation use the
  *      system default (grey/black) small-icon tint unless a notification
  *      color meta-data is present in AndroidManifest.xml.
+ *   3. The base (pre-splash) window background defaults to plain system
+ *      white/black unless android:windowBackground is set, which shows as a
+ *      flash of default color between process start and the themed splash
+ *      actually drawing.
+ *   4. The status bar / navigation bar icon (light vs dark content) contrast
+ *      is left on its system default regardless of how dark or light the
+ *      profile's theme/navigation color is, which can leave system icons
+ *      unreadable against a themed bar instead of matching it.
  *
- * Both are patched here, idempotently and defensively: if the expected
+ * All four are patched here, idempotently and defensively: if the expected
  * template pattern isn't found (e.g. a Bubblewrap/androidbrowserhelper
  * version that already sets it, or changed its template), this script warns
  * instead of failing, exactly like patch-gradle.js does.
@@ -31,6 +39,89 @@ const { loadProfile } = require('../lib/profile');
 const { log, ok, warn } = require('../lib/shell');
 
 const args = parseArgs(process.argv.slice(2));
+
+function isLightColor(hex) {
+  const clean = String(hex).replace('#', '');
+  const rgb = clean.length === 8 ? clean.slice(2) : clean;
+  const r = parseInt(rgb.slice(0, 2), 16);
+  const g = parseInt(rgb.slice(2, 4), 16);
+  const b = parseInt(rgb.slice(4, 6), 16);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 149;
+}
+
+function patchWindowBackground(profile) {
+  const stylesPath = path.join(profile._outputDir, 'app', 'src', 'main', 'res', 'values', 'styles.xml');
+  if (!fs.existsSync(stylesPath)) {
+    warn(`values/styles.xml not found at ${stylesPath} — skipping base window background patch (verify manually).`);
+    return;
+  }
+
+  let content = fs.readFileSync(stylesPath, 'utf8');
+  const original = content;
+  const bgColor = profile.backgroundColor || profile.themeColor;
+
+  if (/windowBackground/.test(content)) {
+    content = content.replace(
+      /(<item name="android:windowBackground">)[^<]*(<\/item>)/,
+      `$1${bgColor}$2`
+    );
+  } else if (/<style name="AppTheme"[^>]*>/.test(content)) {
+    content = content.replace(
+      /(<style name="AppTheme"[^>]*>)/,
+      `$1\n        <item name="android:windowBackground">${bgColor}</item>`
+    );
+  }
+
+  if (content === original) {
+    warn(`Could not locate an AppTheme block to patch in ${stylesPath} — verify android:windowBackground manually.`);
+  } else {
+    fs.writeFileSync(stylesPath, content, 'utf8');
+    ok(`Patched ${stylesPath} → windowBackground ${bgColor} (removes the default system-color flash before the themed splash draws).`);
+  }
+}
+
+function patchBarIconContrast(profile) {
+  const statusBarColor = profile.themeColor;
+  const navBarColor = profile.navigationColor || profile.themeColor;
+
+  const targets = [
+    { dir: 'values-v23', item: 'android:windowLightStatusBar', color: statusBarColor, label: 'status bar' },
+    { dir: 'values-v27', item: 'android:windowLightNavigationBar', color: navBarColor, label: 'navigation bar' },
+  ];
+
+  for (const { dir, item, color, label } of targets) {
+    const stylesPath = path.join(profile._outputDir, 'app', 'src', 'main', 'res', dir, 'styles.xml');
+    if (!fs.existsSync(stylesPath)) {
+      warn(`${dir}/styles.xml not found at ${stylesPath} — skipping ${label} icon contrast patch (verify manually).`);
+      continue;
+    }
+
+    let content = fs.readFileSync(stylesPath, 'utf8');
+    const original = content;
+    const wantLightIcons = !isLightColor(color);
+    const value = wantLightIcons ? 'false' : 'true';
+
+    if (new RegExp(item).test(content)) {
+      content = content.replace(
+        new RegExp(`(<item name="${item}">)[^<]*(<\\/item>)`),
+        `$1${value}$2`
+      );
+    } else if (/<style name="AppTheme"[^>]*>/.test(content)) {
+      content = content.replace(
+        /(<style name="AppTheme"[^>]*>)/,
+        `$1\n        <item name="${item}">${value}</item>`
+      );
+    }
+
+    if (content === original) {
+      warn(`Could not locate an AppTheme block to patch in ${stylesPath} — verify ${item} manually.`);
+    } else {
+      fs.writeFileSync(stylesPath, content, 'utf8');
+      ok(`Patched ${stylesPath} → ${item}=${value} (${label} icons now contrast correctly against ${color} instead of the system default).`);
+    }
+  }
+}
 
 function patchSplashIconBackground(profile) {
   const stylesPath = path.join(profile._outputDir, 'app', 'src', 'main', 'res', 'values-v31', 'styles.xml');
@@ -104,3 +195,5 @@ const profile = loadProfile(profileName);
 log(`Removing remaining default (non-themed) UI from profile "${profile._name}"`);
 patchSplashIconBackground(profile);
 patchNotificationColor(profile);
+patchWindowBackground(profile);
+patchBarIconContrast(profile);
