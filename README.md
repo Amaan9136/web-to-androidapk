@@ -12,10 +12,11 @@ or forked), with:
   36` regardless of which Bubblewrap version you have installed.
 - **No default browser look** — every build is checked against a live
   `assetlinks.json` (the actual cause of a visible browser toolbar/URL bar),
-  themed splash/notification colors are force-patched, and the live site is
-  checked for a zoom-disabling viewport tag, since that's the only place
-  pinch-zoom can actually be turned off. See "No default browser/Android UI"
-  in [`RUN.md`](./RUN.md#4b-no-default-browser-android-ui-zoom-colors-progress).
+  themed splash/notification/status-bar/navigation-bar colors are
+  force-patched, and the live site must disable pinch-zoom via its viewport
+  tag or the build is aborted, since that's the only place pinch-zoom can
+  actually be turned off. See "No default browser/Android UI" in
+  [`RUN.md`](./RUN.md#4b-no-default-browser-android-ui-zoom-colors-progress).
 - **Full CLI pipeline** — init → build → sign → verify → assetlinks, each
   independently runnable or chained.
 - **No dependency on pwabuilder.com** — everything runs locally, driven by
