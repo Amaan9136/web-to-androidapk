@@ -26,7 +26,18 @@ async function main() {
   // Zoom is controlled entirely by the website's own viewport tag (see
   // scripts/check-viewport.js) — check it before scaffolding so a missing
   // "user-scalable=no" is caught immediately instead of after Play review.
-  tryRun(process.execPath, [path.join(__dirname, 'check-viewport.js'), '--profile', profile._name]);
+  // Zoom must never be possible in a generated app, so this check is
+  // --strict by default: a live site that doesn't disable scaling fails the
+  // build. --allow-zoom explicitly opts out of that block.
+  if (args['allow-zoom']) {
+    tryRun(process.execPath, [path.join(__dirname, 'check-viewport.js'), '--profile', profile._name]);
+  } else {
+    const viewportRes = tryRun(process.execPath, [path.join(__dirname, 'check-viewport.js'), '--profile', profile._name, '--strict']);
+    if (viewportRes.status !== 0) {
+      fail('Build aborted: the live site does not disable pinch/double-tap zoom (see above). Fix the viewport tag, or pass --allow-zoom to build anyway.');
+      process.exit(1);
+    }
+  }
 
   const projectExists = fs.existsSync(path.join(profile._outputDir, 'app', 'build.gradle'));
 
