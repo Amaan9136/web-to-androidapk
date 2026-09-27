@@ -4,11 +4,13 @@ Everything you need to turn **any** website's PWA into a signed Android App
 Bundle (`.aab`), ready for Google Play — built on Google's real open-source
 **Bubblewrap** library (`@bubblewrap/core` / `@bubblewrap/cli`, MIT/Apache-2.0
 licensed, pulled straight from npm), with a compliance patch, multi-site
-profile system, and one-command build/sign/verify pipeline.
+profile system, and a one‑command build/sign/verify pipeline.
+
+💡 **Need AI guidance?** If you’re not sure where to start, check the **[PROMPT.md](./PROMPT.md)** file. It contains a ready‑to‑paste prompt you can feed to any LLM (Claude, ChatGPT, etc.) to get step‑by‑step assistance.
 
 This is **not** a wrapper around pwabuilder.com — it drives Bubblewrap's
 programmatic API directly, so it's scriptable, reusable across every site you
-own, and doesn't depend on any third-party website staying online.
+own, and doesn't depend on any third‑party website staying online.
 
 All examples below use a placeholder profile name, `myapp`. Replace it with
 whatever you name your own profile file (e.g. `--profile mystore` for
@@ -41,7 +43,7 @@ npm install
 ```
 
 This pulls the real `@bubblewrap/core` and `@bubblewrap/cli` packages from
-npm (currently `1.25.0`, published with `targetSdkVersion 36` already baked
+npm (currently `1.25.0`, published with the `targetSdkVersion 36` already baked
 into its template — verified directly against the published package, not
 just the GitHub source tree).
 
@@ -399,7 +401,7 @@ the exact JSON is live at `/.well-known/assetlinks.json` on your domain.
 publicly fetchable (no auth wall, no hotlink protection) and ≥512×512px PNG.
 
 **Play Console rejects for target SDK** — run `npm run verify -- --profile
-<name>`; if it reports an SDK below the required minimum, run `npm run patch
+<name>`, if it reports an SDK below the required minimum, run `npm run patch
 -- --profile <name> --target 36` and rebuild. Update
 `REQUIRED_MIN_TARGET_SDK` in `scripts/verify.js` if Google raises the bar
 again in the future.
