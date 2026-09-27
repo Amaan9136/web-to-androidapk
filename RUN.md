@@ -186,6 +186,46 @@ output/myapp/app/build/outputs/bundle/release/app-release.aab
 
 ---
 
+## 4b. No default browser/Android UI: zoom, colors, progress
+
+Every profile now gets this automatically as part of `npm run build`, with
+nothing extra to configure:
+
+- **Colors/theme** — `themeColor`, `navigationColor` and `backgroundColor`
+  from the profile already drive the status bar, navigation bar, splash
+  background and `colorPrimary`/`colorAccent` via Bubblewrap's own
+  `TwaManifest` (see `scripts/init.js`). `npm run patch-theme` (run
+  automatically during `npm run build`, right after `npm run patch`) closes
+  the two gaps Bubblewrap's stock template leaves on default colors:
+  the Android 12+ system splash screen's icon background circle, and the
+  notification accent color — both are forced to the profile's theme color
+  instead of the system default.
+- **"Default browser" toolbar/progress bar** — a TWA only shows *any*
+  browser chrome (URL bar, toolbar, loading indicator) when Digital Asset
+  Link verification fails. `npm run verify` now actually fetches your live
+  `https://<host>/.well-known/assetlinks.json` and confirms it matches this
+  build's signing fingerprint, instead of just printing a reminder. Fix
+  whatever it flags and no browser UI — default or otherwise — will appear.
+- **Pinch/double-tap zoom** — this is the one piece that genuinely cannot be
+  turned off from Android app code: a TWA renders your site through the
+  user's real browser (or, on the rare `fallbackType: "webview"` fallback,
+  through `android.webkit.WebView`), and both honor the page's own
+  `<meta name="viewport">` tag exactly like any browser tab would. `npm run
+  check-viewport` (also run automatically, as a warning, before every build)
+  fetches your live site and fails loudly if it isn't found. If it's
+  missing, add this to the `<head>` of every page on your site:
+  ```html
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  ```
+  Run it manually any time with:
+  ```bash
+  npm run check-viewport -- --profile myapp
+  # or fail the command instead of just warning:
+  npm run check-viewport -- --profile myapp --strict
+  ```
+
+---
+
 ## 5. Sign
 
 If Gradle didn't already auto-sign the bundle (depends on whether
@@ -266,6 +306,8 @@ npm run build -- --profile myapp && npm run sign -- --profile myapp && npm run v
 | `npm run init -- --profile <name>` | Scaffolds the Android project only |
 | `npm run build -- --profile <name>` | Full build: scaffold + patch + Gradle |
 | `npm run patch -- --profile <name>` | Force-patches `build.gradle` SDK versions |
+| `npm run patch-theme -- --profile <name>` | Force-patches remaining default (non-themed) splash/notification colors |
+| `npm run check-viewport -- --profile <name>` | Checks the live site disables pinch-zoom via its viewport tag |
 | `npm run sign -- --profile <name> --generate-key` | Creates a new keystore |
 | `node scripts/sign.js --profile <name> --import-existing <path>` | Imports an existing keystore (e.g. from PWABuilder) |
 | `npm run sign -- --profile <name>` | Signs the built AAB |

@@ -12,6 +12,8 @@ const COMMANDS = {
   init: 'init.js',
   build: 'build.js',
   patch: 'patch-gradle.js',
+  'patch-theme': 'patch-theme.js',
+  'check-viewport': 'check-viewport.js',
   sign: 'sign.js',
   verify: 'verify.js',
   'list-profiles': 'list-profiles.js',
@@ -33,6 +35,8 @@ Commands:
   init                Scaffold a new Android TWA project from a profile
   build               Full build: scaffold + patch + gradle assemble
   patch               Force targetSdkVersion patch on an existing project
+  patch-theme         Force-patch remaining default (non-themed) Android UI
+  check-viewport      Check the live site disables pinch-zoom (no-code fix)
   sign                Generate a keystore or sign an existing AAB/APK
   verify              Check signing + SDK compliance + asset links reminder
   assetlinks          Print the assetlinks.json content for a profile

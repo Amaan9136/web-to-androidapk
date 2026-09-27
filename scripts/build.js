@@ -23,6 +23,11 @@ async function main() {
   const profileName = args.profile || args._[0];
   const profile = loadProfile(profileName);
 
+  // Zoom is controlled entirely by the website's own viewport tag (see
+  // scripts/check-viewport.js) — check it before scaffolding so a missing
+  // "user-scalable=no" is caught immediately instead of after Play review.
+  tryRun(process.execPath, [path.join(__dirname, 'check-viewport.js'), '--profile', profile._name]);
+
   const projectExists = fs.existsSync(path.join(profile._outputDir, 'app', 'build.gradle'));
 
   if (!projectExists) {
@@ -34,6 +39,7 @@ async function main() {
 
   // Always patch after scaffold, defensively, before every build.
   run(process.execPath, [path.join(__dirname, 'patch-gradle.js'), '--profile', profile._name]);
+  run(process.execPath, [path.join(__dirname, 'patch-theme.js'), '--profile', profile._name]);
 
   if (args['skip-build']) {
     ok('Skipping Gradle build (--skip-build set). Project is scaffolded and patched.');
