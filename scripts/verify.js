@@ -2,13 +2,13 @@
 'use strict';
 /**
  * Post-build sanity checks:
- *  - Confirms the AAB/APK is signed
+ *  - Confirms the AAB is signed (or the APK, when --apk is passed)
  *  - Confirms targetSdkVersion meets current Play Store requirements
  *  - Reminds you to check assetlinks.json (Digital Asset Links) is live,
  *    since a mismatched fingerprint is the #1 cause of TWAs falling back
  *    to a browser address bar instead of running fullscreen.
  *
- * Usage: node scripts/verify.js --profile seeze
+ * Usage: node scripts/verify.js --profile seeze [--apk]
  */
 const fs = require('fs');
 const path = require('path');
@@ -16,7 +16,7 @@ const https = require('https');
 const { spawnSync } = require('child_process');
 const { parseArgs } = require('../lib/args');
 const { loadProfile } = require('../lib/profile');
-const { log, ok, warn, fail, tryRun } = require('../lib/shell');
+const { log, ok, warn, fail, tryRun, apksignerCommand } = require('../lib/shell');
 
 function fetchJson(url) {
   return new Promise((resolve) => {
@@ -40,6 +40,7 @@ async function main() {
 
   const gradlePath = path.join(profile._outputDir, 'app', 'build.gradle');
   const aabPath = path.join(profile._outputDir, 'app', 'build', 'outputs', 'bundle', 'release', 'app-release.aab');
+  const apkPath = path.join(profile._outputDir, 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk');
 
   console.log('');
   log(`Verifying profile "${profile._name}"`);
@@ -75,7 +76,23 @@ async function main() {
   }
 
   // 3. Signature check
-  if (fs.existsSync(aabPath)) {
+  if (args.apk) {
+    const signer = apksignerCommand();
+    if (!fs.existsSync(apkPath)) {
+      warn(`No signed APK found at ${apkPath} yet — run the build first.`);
+    } else if (!signer) {
+      warn('apksigner not found — install Android SDK build-tools and set ANDROID_HOME (or add apksigner to PATH) to verify the APK.');
+    } else {
+      log('Checking APK signature with apksigner verify...');
+      const [signerCmd, ...signerPre] = signer;
+      const res = tryRun(signerCmd, [...signerPre, 'verify', '--verbose', apkPath]);
+      if (res.status === 0) {
+        ok('APK is signed and verifies correctly.');
+      } else {
+        warn('APK does not verify. Run: npm run build -- --profile ' + profile._name);
+      }
+    }
+  } else if (fs.existsSync(aabPath)) {
     log('Checking AAB signature with jarsigner -verify...');
     const res = tryRun('jarsigner', ['-verify', '-verbose', aabPath]);
     if (res.status === 0) {

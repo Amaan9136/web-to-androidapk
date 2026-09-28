@@ -1,7 +1,8 @@
 # Web to Android PWA Toolkit
 
 A general-purpose, reusable toolkit for turning **any** website's PWA into a
-signed Android App Bundle (`.aab`) ready for Google Play — built directly on
+signed Android App Bundle (`.aab`) ready for Google Play and a signed `.apk` ready
+for direct download and testing — built directly on
 the Google's real open-source [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap)
 library (`@bubblewrap/core` + `@bubblewrap/cli` library, pulled from npm, not vendored
 or forked), with:
@@ -27,7 +28,7 @@ setup, building, signing, and publishing.
 
 🤖 **Take AI‑assisted help:** The **[PROMPT.md](./PROMPT.md)** file provides a ready‑to‑use prompt you can give to any LLM (Claude, ChatGPT, etc.) to walk through setup and usage step‑by‑step.
 
-Repo: https://github.com/Amaan9136/web-to-androidtwa
+Repo: https://github.com/Amaan9136/web-to-androidapk
 
 ## Project layout
 

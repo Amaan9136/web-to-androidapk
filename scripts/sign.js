@@ -3,11 +3,10 @@
 /**
  * Handles keystore generation and manual signing.
  *
- * NOTE: Gradle's `bundleRelease` task will auto-sign using the
- * signingConfig Bubblewrap wires into build.gradle IF the keystore already
- * exists at build time and android/key.properties (or gradle.properties)
- * has the passwords. This script covers the two cases where you need
- * manual control:
+ * NOTE: Gradle produces the AAB and APK unsigned. `npm run build` signs the
+ * APK automatically and saves it as app-release.apk, replacing
+ * app-release-unsigned.apk. The AAB is signed with this script. This script
+ * covers the two cases where you need manual control:
  *
  *   1. You don't have a keystore yet:
  *        npm run sign -- --profile seeze --generate-key
@@ -26,7 +25,7 @@ const path = require('path');
 const readline = require('readline');
 const { parseArgs } = require('../lib/args');
 const { loadProfile } = require('../lib/profile');
-const { log, ok, warn, fail, run } = require('../lib/shell');
+const { log, ok, warn, fail, run, apksignerCommand } = require('../lib/shell');
 
 function prompt(question, hidden = false) {
   return new Promise((resolve) => {
@@ -165,34 +164,26 @@ async function signFile(profile, filePath) {
     ok(`Signed AAB: ${filePath}`);
     log('Upload this .aab directly to Google Play Console.');
   } else if (filePath.endsWith('.apk')) {
-    // APKs should be signed with apksigner (from Android build-tools) for
-    // correct v2/v3 scheme signing. Falls back to jarsigner if apksigner
-    // isn't on PATH (older devices only, not recommended for Play).
-    const apksignerCheck = require('child_process').spawnSync('apksigner', ['--version']);
-    if (apksignerCheck.error) {
-      warn('apksigner not found on PATH — falling back to jarsigner (v1 signing only).');
-      warn('Install Android SDK build-tools and add them to PATH for proper v2/v3 signing.');
-      run('jarsigner', [
-        '-verbose',
-        '-sigalg', 'SHA256withRSA',
-        '-digestalg', 'SHA-256',
-        '-keystore', profile._keystorePath,
-        '-storepass', ksPass,
-        '-keypass', keyPass,
-        filePath,
-        profile.signingKey.alias,
-      ]);
-    } else {
-      run('apksigner', [
-        'sign',
-        '--ks', profile._keystorePath,
-        '--ks-key-alias', profile.signingKey.alias,
-        '--ks-pass', `pass:${ksPass}`,
-        '--key-pass', `pass:${keyPass}`,
-        filePath,
-      ]);
+    const signer = apksignerCommand();
+    if (!signer) {
+      fail('apksigner not found. Install Android SDK build-tools (sdkmanager "build-tools;36.0.0") and set ANDROID_HOME, or add apksigner to PATH.');
+      process.exit(1);
     }
-    ok(`Signed APK: ${filePath}`);
+    const outPath = filePath.replace(/-unsigned\.apk$/, '.apk');
+    const [signerCmd, ...signerPre] = signer;
+    run(signerCmd, [
+      ...signerPre,
+      'sign',
+      '--ks', profile._keystorePath,
+      '--ks-key-alias', profile.signingKey.alias,
+      '--ks-pass', `pass:${ksPass}`,
+      '--key-pass', `pass:${keyPass}`,
+      ...(outPath !== filePath ? ['--out', outPath] : []),
+      filePath,
+    ]);
+    if (outPath !== filePath) fs.rmSync(filePath);
+    ok(`Signed APK: ${outPath}`);
+    log('Install this .apk directly on an Android device, or share it for sideloading.');
   } else {
     fail('Unsupported file type — expected a .aab or .apk file.');
     process.exit(1);

@@ -33,12 +33,12 @@ Commands:
   doctor              Check your environment (Node/Java/keytool)
   list-profiles       List all configured site profiles
   init                Scaffold a new Android TWA project from a profile
-  build               Full build: scaffold + patch + gradle assemble
+  build               Full build: scaffold + patch + gradle -> AAB + signed APK
   patch               Force targetSdkVersion patch on an existing project
   patch-theme         Force-patch remaining default (non-themed) Android UI
   check-viewport      Check the live site disables pinch-zoom (no-code fix)
   sign                Generate a keystore or sign an existing AAB/APK
-  verify              Check signing + SDK compliance + asset links reminder
+  verify              Check signing (--apk for the APK) + SDK compliance + asset links
   assetlinks          Print the assetlinks.json content for a profile
 
 Examples:

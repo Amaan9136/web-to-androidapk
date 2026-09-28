@@ -1,7 +1,8 @@
 # RUN.md — webtwa: Web-to-Android PWA Toolkit
 
 Everything you need to turn **any** website's PWA into a signed Android App
-Bundle (`.aab`), ready for Google Play — built on Google's real open-source
+Bundle (`.aab`) for Google Play and a signed `.apk` for direct download and
+sideloading — built on Google's real open-source
 **Bubblewrap** library (`@bubblewrap/core` / `@bubblewrap/cli`, MIT/Apache-2.0
 licensed, pulled straight from npm), with a compliance patch, multi-site
 profile system, and a one‑command build/sign/verify pipeline.
@@ -37,8 +38,8 @@ npm run doctor
 ## 1. Install
 
 ```bash
-git clone https://github.com/Amaan9136/web-to-androidtwa.git
-cd web-to-androidtwa
+git clone https://github.com/Amaan9136/web-to-androidapk.git
+cd web-to-androidapk
 npm install
 ```
 
@@ -160,8 +161,8 @@ terminals.
 ## 4. Build
 
 Full pipeline — scaffolds the Android project (if not already generated),
-defensively patches `targetSdkVersion` to 36, then runs the Gradle release
-build:
+defensively patches `targetSdkVersion` to 36, runs the Gradle release build,
+and signs the APK with your keystore:
 
 ```bash
 npm run build -- --profile myapp
@@ -172,9 +173,6 @@ Useful flags:
 ```bash
 # Scaffold + patch only, skip the (slow) Gradle build
 npm run build -- --profile myapp --skip-build
-
-# Also produce a debuggable/unsigned APK alongside the AAB
-npm run build -- --profile myapp --apk
 ```
 
 First run downloads Gradle + Android build tools (~1GB) — this can take
@@ -184,7 +182,13 @@ Output lands at:
 
 ```
 output/myapp/app/build/outputs/bundle/release/app-release.aab
+output/myapp/app/build/outputs/apk/release/app-release.apk
 ```
+
+The `.apk` is signed with your keystore and ready to share for testing or to
+install as an unofficial (sideloaded) app. If no keystore exists yet, the
+build leaves `app-release-unsigned.apk` instead; create a keystore and sign it
+with `npm run sign -- --profile myapp --file <path-to-unsigned-apk>`.
 
 ---
 
@@ -232,8 +236,8 @@ nothing extra to configure:
 
 ## 5. Sign
 
-If Gradle didn't already auto-sign the bundle (depends on whether
-`key.properties` was picked up), sign it manually:
+Gradle produces the bundle unsigned, so sign it. The APK is already signed
+by `npm run build`:
 
 ```bash
 npm run sign -- --profile myapp
@@ -247,6 +251,10 @@ keystore from the profile. To sign a different file:
 npm run sign -- --profile myapp --file path/to/app-release.aab
 ```
 
+Signing an `-unsigned.apk` file saves the signed result as `app-release.apk`
+and removes the unsigned file. APK signing needs `apksigner` from the Android
+SDK build-tools.
+
 ---
 
 ## 6. Verify
@@ -256,6 +264,12 @@ reminder + exact fingerprint for your site's Digital Asset Links file:
 
 ```bash
 npm run verify -- --profile myapp
+```
+
+Add `--apk` to check the signed APK instead of the AAB:
+
+```bash
+npm run verify -- --profile myapp --apk
 ```
 
 ---
@@ -308,7 +322,7 @@ npm run build -- --profile myapp && npm run sign -- --profile myapp && npm run v
 | `npm run doctor` | Checks Node/Java/keytool availability |
 | `npm run list-profiles` | Lists all valid profiles in `/profiles` |
 | `npm run init -- --profile <name>` | Scaffolds the Android project only |
-| `npm run build -- --profile <name>` | Full build: scaffold + patch + Gradle |
+| `npm run build -- --profile <name>` | Full build: scaffold + patch + Gradle, produces the AAB and a signed APK |
 | `npm run patch -- --profile <name>` | Force-patches `build.gradle` SDK versions |
 | `npm run patch-theme -- --profile <name>` | Force-patches remaining default (non-themed) splash/notification colors |
 | `npm run check-viewport -- --profile <name>` | Checks the live site disables pinch-zoom via its viewport tag |
@@ -316,7 +330,8 @@ npm run build -- --profile myapp && npm run sign -- --profile myapp && npm run v
 | `node scripts/sign.js --profile <name> --import-existing <path>` | Imports an existing keystore (e.g. from PWABuilder) |
 | `npm run sign -- --profile <name>` | Signs the built AAB |
 | `npm run sign -- --profile <name> --file <path>` | Signs a specific file (AAB or APK) |
-| `npm run verify -- --profile <name>` | Checks signature + SDK compliance |
+| `npm run verify -- --profile <name>` | Checks AAB signature + SDK compliance |
+| `npm run verify -- --profile <name> --apk` | Checks APK signature + SDK compliance |
 | `node scripts/gen-assetlinks.js --profile <name>` | Prints/writes `assetlinks.json` |
 
 Or via the unified CLI (identical behavior, shorter to type once linked):
@@ -377,7 +392,7 @@ webtwa verify --profile myapp
 3. `npm run build -- --profile newsite`
 4. `npm run sign -- --profile newsite`
 5. Host the printed `assetlinks.json` on `newsite.com`.
-6. Upload the `.aab` to Play Console.
+6. Upload the `.aab` to Play Console, or share the signed `.apk` for sideloading.
 
 Every site's generated project lives isolated under `output/<profile>/`, and
 every keystore under `keystores/`, so profiles never collide.

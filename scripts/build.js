@@ -4,13 +4,12 @@
  * Full build pipeline for one profile:
  *   1. Generate the Android project (bubblewrap init logic) if not present
  *   2. Patch build.gradle to guarantee targetSdkVersion 36 compliance
- *   3. Run the Gradle wrapper to produce app-release-bundle.aab (and APK)
- *   4. Sign with the profile's keystore (if not already signed by Gradle)
+ *   3. Run the Gradle wrapper to produce app-release.aab and an unsigned APK
+ *   4. Sign the APK with the profile's keystore and save it as app-release.apk
  *
  * Usage:
  *   npm run build -- --profile seeze
  *   npm run build -- --profile seeze --skip-build   (scaffold + patch only)
- *   npm run build -- --profile seeze --apk           (also build a debuggable APK)
  */
 const fs = require('fs');
 const path = require('path');
@@ -60,7 +59,7 @@ async function main() {
   if (!fs.existsSync(profile._keystorePath)) {
     warn(`Keystore not found at ${profile._keystorePath}.`);
     warn('Generate one first: npm run sign -- --profile ' + profile._name + ' --generate-key');
-    warn('Continuing — Gradle build will still produce an UNSIGNED bundle.');
+    warn('Continuing — Gradle build will still produce an UNSIGNED bundle and an UNSIGNED APK.');
   }
 
   const gradlewName = process.platform === 'win32' ? 'gradlew.bat' : './gradlew';
@@ -76,9 +75,7 @@ async function main() {
 
   log('Running Gradle build (this downloads Gradle + Android build tools on first run — can take several minutes)...');
 
-  const tasks = args.apk
-    ? ['bundleRelease', 'assembleRelease']
-    : ['bundleRelease'];
+  const tasks = ['bundleRelease', 'assembleRelease'];
 
   if (process.platform === 'win32') {
     run([gradlewName, ...tasks].join(' '), [], { cwd: profile._outputDir, shell: true });
@@ -87,12 +84,17 @@ async function main() {
   }
 
   const aabPath = path.join(profile._outputDir, 'app', 'build', 'outputs', 'bundle', 'release', 'app-release.aab');
-  const apkPath = path.join(profile._outputDir, 'app', 'build', 'outputs', 'apk', 'release', 'app-release-unsigned.apk');
+  const unsignedApkPath = path.join(profile._outputDir, 'app', 'build', 'outputs', 'apk', 'release', 'app-release-unsigned.apk');
+  const apkPath = path.join(profile._outputDir, 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk');
+  if (fs.existsSync(unsignedApkPath) && fs.existsSync(profile._keystorePath)) {
+    run(process.execPath, [path.join(__dirname, 'sign.js'), '--profile', profile._name, '--file', unsignedApkPath]);
+  }
 
   console.log('');
   ok('Build complete.');
   if (fs.existsSync(aabPath)) ok(`AAB: ${aabPath}`);
-  if (args.apk && fs.existsSync(apkPath)) ok(`APK (unsigned): ${apkPath}`);
+  if (fs.existsSync(unsignedApkPath)) warn(`APK is unsigned: ${unsignedApkPath} — generate a keystore, then run: npm run sign -- --profile ${profile._name} --file "${unsignedApkPath}"`);
+  else if (fs.existsSync(apkPath)) ok(`APK (signed): ${apkPath}`);
   log('If the bundle is not yet signed, run: npm run sign -- --profile ' + profile._name);
   log('Then verify with: npm run verify -- --profile ' + profile._name);
 }
