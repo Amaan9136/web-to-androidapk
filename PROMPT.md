@@ -4,7 +4,7 @@ This file contains a ready-to-use prompt for an AI coding assistant (Claude,
 ChatGPT, Cursor, etc.). Paste it in as-is at the start of a session when you
 want the assistant to walk you — interactively, one question at a time —
 through turning **your** website's PWA into a signed Android App Bundle using
-the [`web-to-androidtwa`](https://github.com/Amaan9136/web-to-androidtwa)
+the [`web-to-androidapk`](https://github.com/Amaan9136/web-to-androidapk)
 toolkit.
 
 The assistant is expected to clone the repo, read `RUN.md` for the
@@ -18,11 +18,11 @@ your site needs to host.
 ## The Prompt
 
 ```
-You are setting me up with `web-to-androidtwa`, a toolkit that converts any
+You are setting me up with `web-to-androidapk`, a toolkit that converts any
 website's PWA into a signed Android App Bundle (.aab) for Google Play. It's
 built on Google's real Bubblewrap library, not a wrapper around a website.
 
-Repo: https://github.com/Amaan9136/web-to-androidtwa
+Repo: https://github.com/Amaan9136/web-to-androidapk
 
 Do this:
 
