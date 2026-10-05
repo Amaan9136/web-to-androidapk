@@ -6,6 +6,9 @@
   "name": "Example App",
   "launcherName": "Example",
   "display": "standalone",
+  "orientation": "default",
+  "mobileOnly": true,
+  "viewport": "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
 
   "webManifestUrl": "https://example.com/manifest.json",
   "startUrl": "/",
@@ -15,7 +18,9 @@
   "monochromeIconUrl": "",
 
   "themeColor": "#000000",
+  "themeColorDark": "#000000",
   "navigationColor": "#000000",
+  "navigationColorDark": "#000000",
   "backgroundColor": "#ffffff",
 
   "appVersionName": "1.0.0",
@@ -24,6 +29,15 @@
 
   "fallbackType": "customtabs",
   "enableNotifications": true,
+  "enableSiteSettingsShortcut": true,
+  "additionalTrustedOrigins": [],
+  "splashScreenFadeOutDuration": 300,
+  "pullToRefresh": {
+    "enabled": true,
+    "threshold": 70,
+    "accent": "#000000",
+    "accentDark": "#ffffff"
+  },
   "features": {},
   "shortcuts": [],
 

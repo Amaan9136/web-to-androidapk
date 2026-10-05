@@ -25,15 +25,13 @@
  *   node scripts/check-viewport.js --profile seeze
  *   node scripts/check-viewport.js --profile seeze --strict   (exit 1 on failure)
  */
+const path = require('path');
 const https = require('https');
 const http = require('http');
 const { URL } = require('url');
 const { parseArgs } = require('../lib/args');
 const { loadProfile } = require('../lib/profile');
 const { log, ok, warn, fail } = require('../lib/shell');
-
-const REQUIRED_SNIPPET =
-  '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">';
 
 function fetchUrl(targetUrl, redirectsLeft = 5) {
   return new Promise((resolve, reject) => {
@@ -83,6 +81,25 @@ function isZoomDisabled(viewportContent) {
   return userScalableOff || maxScaleLocked;
 }
 
+async function checkManifest(profile) {
+  let manifest;
+  try {
+    const res = await fetchUrl(profile.webManifestUrl);
+    if (res.statusCode >= 400) return warn(`Web manifest ${profile.webManifestUrl} returned HTTP ${res.statusCode} — skipping manifest check.`);
+    manifest = JSON.parse(res.body);
+  } catch (e) {
+    return warn(`Could not read web manifest ${profile.webManifestUrl} (${e.message}) — skipping manifest check.`);
+  }
+  const issues = [];
+  const display = profile.display.replace('-sticky', '');
+  if (manifest.display !== display) issues.push(`display is "${manifest.display}", profile expects "${display}"`);
+  if (profile.orientation !== 'default' && !String(manifest.orientation || '').startsWith(profile.orientation)) issues.push(`orientation is "${manifest.orientation}", profile expects "${profile.orientation}"`);
+  if (profile.themeColor.length === 7 && String(manifest.theme_color || '').toLowerCase() !== profile.themeColor.toLowerCase()) issues.push(`theme_color is "${manifest.theme_color}", profile expects "${profile.themeColor}"`);
+  if (profile.backgroundColor.length === 7 && String(manifest.background_color || '').toLowerCase() !== profile.backgroundColor.toLowerCase()) issues.push(`background_color is "${manifest.background_color}", profile expects "${profile.backgroundColor}"`);
+  if (issues.length) warn(`Web manifest ${profile.webManifestUrl} disagrees with the profile:\n   - ${issues.join('\n   - ')}\n   Suggested values: ${path.join(profile._outputDir, 'web', 'manifest-patch.json')}`);
+  else ok('Web manifest matches the profile (display, orientation, theme_color, background_color).');
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const profileName = args.profile || args._[0];
@@ -114,6 +131,16 @@ async function main() {
     ok(`Zoom is disabled by the site's viewport tag (content="${viewportContent}"). Pinch/double-tap zoom will not work in the generated app.`);
   }
 
+  if (viewportContent !== null && !/viewport-fit\s*=\s*cover/i.test(viewportContent)) {
+    warn('The viewport tag has no viewport-fit=cover, so env(safe-area-inset-*) is 0 and content can sit under the status/navigation bars (edge-to-edge is enforced on targetSdk 35+).');
+  }
+
+  if (profile.mobileOnly && !/twa-mobile/.test(html)) {
+    warn(`twa-mobile.js is not referenced by ${pageUrl}. Without it a user who picked "Desktop site" in Chrome still gets the desktop layout inside the app, and pull-to-refresh is not themed. Generate it with: npm run gen-web -- --profile ${profile._name}`);
+  }
+
+  await checkManifest(profile);
+
   function reportZoomable(_profile, reason) {
     const message =
       `${reason}\n` +
@@ -121,7 +148,7 @@ async function main() {
       'entirely by the website\'s own viewport tag — it cannot be disabled from ' +
       'Android app code. Add this to the <head> of every page on ' +
       `${profile.host} to make the generated app non-zoomable:\n\n` +
-      `      ${REQUIRED_SNIPPET}\n`;
+      `      <meta name="viewport" content="${profile.viewport}">\n`;
     if (args.strict) {
       fail(message);
       process.exit(1);

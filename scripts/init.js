@@ -38,9 +38,12 @@ async function main() {
     host: profile.host,
     name: profile.name,
     launcherName: profile.launcherName,
-    display: profile.display || 'standalone',
+    display: profile.display,
+    orientation: profile.orientation,
     themeColor: profile.themeColor,
+    themeColorDark: profile.themeColorDark || profile.themeColor,
     navigationColor: profile.navigationColor || profile.themeColor,
+    navigationColorDark: profile.navigationColorDark || profile.navigationColor || profile.themeColor,
     backgroundColor: profile.backgroundColor,
     startUrl: profile.startUrl,
     iconUrl: profile.iconUrl,
@@ -61,6 +64,8 @@ async function main() {
     features: profile.features || {},
     alphaDependencies: { enabled: false },
     enableNotifications: profile.enableNotifications !== false,
+    enableSiteSettingsShortcut: profile.enableSiteSettingsShortcut !== false,
+    additionalTrustedOrigins: profile.additionalTrustedOrigins || [],
     generatorApp: 'webtwa-toolkit',
     webManifestUrl: profile.webManifestUrl,
   });
@@ -68,6 +73,7 @@ async function main() {
   const twaGenerator = new TwaGenerator();
   await twaGenerator.createTwaProject(profile._outputDir, manifest, twaLog);
 
+  fs.writeFileSync(path.join(profile._outputDir, '.profile-hash'), profile._hash);
   ok(`Project scaffolded at ${profile._outputDir}`);
   log('Next: npm run build -- --profile ' + profile._name);
 }

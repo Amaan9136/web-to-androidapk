@@ -38,18 +38,20 @@ async function main() {
     }
   }
 
-  const projectExists = fs.existsSync(path.join(profile._outputDir, 'app', 'build.gradle'));
+  const hashPath = path.join(profile._outputDir, '.profile-hash');
+  const projectExists = fs.existsSync(path.join(profile._outputDir, 'app', 'build.gradle')) && fs.existsSync(hashPath) && fs.readFileSync(hashPath, 'utf8') === profile._hash;
 
   if (!projectExists) {
-    log('No existing project found — scaffolding first...');
+    log('No up-to-date project found (missing, or the profile changed) — scaffolding first...');
     run(process.execPath, [path.join(__dirname, 'init.js'), '--profile', profile._name]);
   } else {
-    log(`Existing project found at ${profile._outputDir}, skipping scaffold (delete the folder to regenerate).`);
+    log(`Project at ${profile._outputDir} matches the current profile, skipping scaffold.`);
   }
 
   // Always patch after scaffold, defensively, before every build.
   run(process.execPath, [path.join(__dirname, 'patch-gradle.js'), '--profile', profile._name]);
   run(process.execPath, [path.join(__dirname, 'patch-theme.js'), '--profile', profile._name]);
+  run(process.execPath, [path.join(__dirname, 'gen-web.js'), '--profile', profile._name]);
 
   if (args['skip-build']) {
     ok('Skipping Gradle build (--skip-build set). Project is scaffolded and patched.');

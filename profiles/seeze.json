@@ -4,6 +4,9 @@
   "name": "Seeze",
   "launcherName": "Seeze",
   "display": "standalone",
+  "orientation": "default",
+  "mobileOnly": true,
+  "viewport": "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
 
   "webManifestUrl": "https://seeze.automatech.live/manifest.json",
   "startUrl": "/",
@@ -13,7 +16,9 @@
   "monochromeIconUrl": "https://seeze.automatech.live/icon-monochrome.png",
 
   "themeColor": "#8c5a3c",
+  "themeColorDark": "#8c5a3c",
   "navigationColor": "#8c5a3c",
+  "navigationColorDark": "#8c5a3c",
   "backgroundColor": "#f7f3eb",
 
   "appVersionName": "1.0.2",
@@ -22,6 +27,15 @@
 
   "fallbackType": "customtabs",
   "enableNotifications": true,
+  "enableSiteSettingsShortcut": true,
+  "additionalTrustedOrigins": [],
+  "splashScreenFadeOutDuration": 300,
+  "pullToRefresh": {
+    "enabled": true,
+    "threshold": 70,
+    "accent": "#8c5a3c",
+    "accentDark": "#c99a78"
+  },
   "features": {},
   "shortcuts": [
     {

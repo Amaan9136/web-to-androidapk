@@ -14,6 +14,7 @@ const COMMANDS = {
   patch: 'patch-gradle.js',
   'patch-theme': 'patch-theme.js',
   'check-viewport': 'check-viewport.js',
+  'gen-web': 'gen-web.js',
   sign: 'sign.js',
   verify: 'verify.js',
   'list-profiles': 'list-profiles.js',
@@ -37,6 +38,7 @@ Commands:
   patch               Force targetSdkVersion patch on an existing project
   patch-theme         Force-patch remaining default (non-themed) Android UI
   check-viewport      Check the live site disables pinch-zoom (no-code fix)
+  gen-web             Generate the site-side mobile-lock + themed pull-to-refresh files
   sign                Generate a keystore or sign an existing AAB/APK
   verify              Check signing (--apk for the APK) + SDK compliance + asset links
   assetlinks          Print the assetlinks.json content for a profile

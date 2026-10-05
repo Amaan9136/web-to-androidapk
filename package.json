@@ -12,6 +12,7 @@
     "patch": "node scripts/patch-gradle.js",
     "patch-theme": "node scripts/patch-theme.js",
     "check-viewport": "node scripts/check-viewport.js",
+    "gen-web": "node scripts/gen-web.js",
     "sign": "node scripts/sign.js",
     "verify": "node scripts/verify.js",
     "list-profiles": "node scripts/list-profiles.js",
