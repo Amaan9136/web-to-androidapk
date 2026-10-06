@@ -4,7 +4,7 @@
   "name": "Seeze",
   "launcherName": "Seeze",
   "display": "standalone",
-  "orientation": "default",
+  "orientation": "portrait",
   "mobileOnly": true,
   "viewport": "width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
 
@@ -21,8 +21,8 @@
   "navigationColorDark": "#8c5a3c",
   "backgroundColor": "#f7f3eb",
 
-  "appVersionName": "1.0.2",
-  "appVersionCode": 3,
+  "appVersionName": "1.0.3",
+  "appVersionCode": 4,
   "minSdkVersion": 24,
 
   "fallbackType": "customtabs",
@@ -33,16 +33,16 @@
   "pullToRefresh": {
     "enabled": "auto",
     "threshold": 70,
-    "background": "#f7f3eb",
-    "backgroundDark": "#2a1f18",
+    "background": "#fffaf2",
+    "backgroundDark": "#111620",
     "border": "#8c5a3c",
-    "borderDark": "#c99a78",
+    "borderDark": "#ff6b35",
     "ring": "#8c5a3c",
-    "ringDark": "#c99a78"
+    "ringDark": "#ff6b35"
   },
-  "progressBar": { "enabled": true, "height": 3, "color": "#8c5a3c", "colorDark": "#c99a78" },
+  "progressBar": { "enabled": true, "height": 3, "color": "#8c5a3c", "colorDark": "#ff6b35" },
   "ui": { "nativeTheme": true, "safeArea": "auto", "lockContextMenu": true, "lockSelection": false },
-  "webRoot": "D:/0 AMAAN MAIN/Codes and Tools/My NextJS/seeze",
+  "webRoot": "D:/0 AMAAN MAIN/Codes and Tools/My NextJS/seeze/frontend/public",
   "webHtml": [],
   "webManifestPath": "",
   "features": {},
@@ -75,7 +75,7 @@
 
   "playSigningFingerprint": [
     "82:B0:F4:7D:AE:45:B3:32:6E:DB:D3:22:DA:33:2F:8A:4F:0A:91:A5:FA:56:53:40:45:AA:BC:A5:5B:A0:99:63",
-    "10:0D:65:31:3B:1F:58:90:80:7F:30:A7:70:50:4E:99:4A:A9:17:18:B0:B8:A7:68:47:C9:29:A4:9A:48:23:0A", 
+    "10:0D:65:31:3B:1F:58:90:80:7F:30:A7:70:50:4E:99:4A:A9:17:18:B0:B8:A7:68:47:C9:29:A4:9A:48:23:0A",
     "24:A3:22:27:CF:36:36:8B:BB:30:85:FA:BA:C2:CF:7F:22:79:FC:B8:53:19:3B:79:CD:A3:6E:BA:21:DA:D2:0F"
   ]
 }
