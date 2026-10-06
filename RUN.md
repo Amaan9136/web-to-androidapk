@@ -223,14 +223,136 @@ nothing extra to configure:
   a generated app. If it's missing, add this to the `<head>` of every page
   on your site:
   ```html
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   ```
+  `viewport-fit=cover` is required: without it `env(safe-area-inset-*)` is 0
+  and content sits under the system bars (edge-to-edge is enforced on
+  targetSdk 35+). The toolkit's default targetSdk is already 36.
   Run it manually any time with:
   ```bash
   npm run check-viewport -- --profile myapp --strict
   # or explicitly opt out of the build-blocking behavior:
   npm run build -- --profile myapp --allow-zoom
   ```
+
+### Site-side files: `twa-mobile.js` (mobile-only, themed UI, no zoom)
+
+`npm run build` also writes `output/<profile>/web/` (`twa-mobile.js`,
+`head-snippet.html`, `manifest-patch.json`). Inside the installed app only
+(never in a normal browser tab), `twa-mobile.js`:
+
+- forces the mobile viewport even if the user chose "Desktop site" in Chrome,
+  and forces `maximum-scale=1, user-scalable=no, viewport-fit=cover`
+  (also blocks pinch, Ctrl+wheel and Ctrl +/- zoom);
+- shows a theme-colored top progress bar for page loads, `fetch` and XHR
+  (`progressBar` in the profile);
+- themes browser defaults: form controls, scrollbars, text selection, focus
+  ring, `<progress>`, autofill, color-scheme (`ui.nativeTheme`);
+- draws a themed pull-to-refresh: circle = `background`, border = `border`,
+  spinner = `ring` (each has a `*Dark` variant).
+
+**Automatic vs manual.** Set `webRoot` (path to your site's static/public
+folder) in the profile and `npm run gen-web -- --profile <n>` (also run by
+`build`) copies `twa-mobile.js` there, merges `manifest-patch.json` into your
+manifest (`webManifestPath` if it isn't `manifest.json`/`manifest.webmanifest`)
+and injects `head-snippet.html` first in `<head>` of every file listed in
+`webHtml`. Re-running is safe. With a framework (Next/Vite/etc.) put the
+snippet in your root layout/`index.html` once instead. Without `webRoot` you
+must do those three steps by hand. In both cases you still have to
+**deploy the site**, since the app loads the live site.
+
+`pullToRefresh.enabled`: `"auto"` (default) turns the toolkit's pull-to-refresh
+off when your page already has its own (a `data-ptr`/`pull-to-refresh`
+element, `overscroll-behavior` set, or `<meta name="twa-ptr" content="off">`);
+`true` forces it on, `false` forces it off.
+
+---
+
+### 4c. Wiring the site, by architecture
+
+Whatever your stack, four things must be true on the live site. The toolkit
+can do the first (and the manifest merge) for you via `webRoot`; the rest
+depends on how your site renders HTML.
+
+1. `https://<host>/twa-mobile.js` is served (file lives in the site's public/static folder).
+2. Every page loads that script, as early as possible, from the server-sent HTML.
+3. The viewport is `width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover`
+   (`twa-mobile.js` also forces this in the app, but the server HTML should be right too; `check-viewport` reads the server HTML).
+4. The live web manifest has the values from `manifest-patch.json`.
+
+Keep `webHtml: []` and `webManifestPath: ""` unless your site is plain static
+HTML. `webRoot` is the folder that is served at `/`.
+
+| Stack | `webRoot` | Where the script + viewport go |
+|---|---|---|
+| Plain static HTML | the site folder | set `webHtml: ["index.html", ...]` and the toolkit injects the snippet |
+| Next.js App Router | `<project>/public` | `app/layout.tsx` (below) |
+| Next.js Pages Router | `<project>/public` | `pages/_document.tsx` (below) |
+| Vite / CRA React SPA | `<project>/public` | `index.html` (Vite: project root, CRA: `public/`); `webHtml: ["../index.html"]` works for Vite |
+| Nuxt 3 | `<project>/public` | `nuxt.config.ts` -> `app.head` (`script`, `meta`) |
+| SvelteKit | `<project>/static` | `src/app.html` `<head>` |
+| Remix / React Router | `<project>/public` | `app/root.tsx` `<head>` |
+| Astro | `<project>/public` | base layout `<head>` |
+| WordPress / PHP | theme or site root | `header.php` / `wp_head`, file in the theme or web root |
+
+**Next.js App Router** (`app/layout.tsx`):
+
+```tsx
+import Script from 'next/script';
+import type { Viewport } from 'next';
+
+export const viewport: Viewport = {
+  width: 'device-width', initialScale: 1, minimumScale: 1, maximumScale: 1,
+  userScalable: false, viewportFit: 'cover', themeColor: '#8c5a3c',
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body>
+        <Script src="/twa-mobile.js" strategy="beforeInteractive" />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+`beforeInteractive` only works in the root layout. `suppressHydrationWarning`
+is needed because the script sets attributes and CSS variables on `<html>`.
+If your manifest is `app/manifest.ts` (not `public/manifest.json`), the toolkit
+cannot merge it: copy the keys from `output/<profile>/web/manifest-patch.json`
+into it by hand.
+
+**Next.js Pages Router** (`pages/_document.tsx`):
+
+```tsx
+import { Html, Head, Main, NextScript } from 'next/document';
+
+export default function Document() {
+  return (
+    <Html lang="en">
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        <script src="/twa-mobile.js" />
+      </Head>
+      <body><Main /><NextScript /></body>
+    </Html>
+  );
+}
+```
+
+Do not set a viewport meta in `_app.tsx`; Next warns about it there.
+
+**Vite / CRA / any `index.html`**: paste `output/<profile>/web/head-snippet.html`
+as the first thing in `<head>` once (the root document is shared by every route).
+
+**Common mistakes**
+- Script added only on some routes or in a client-only component: it must be in the root layout/document so every page has it.
+- Script injected by JavaScript after load: the zoom lock arrives late and `check-viewport` can't see it.
+- Cached old `twa-mobile.js` (CDN / service worker): after re-running `gen-web`, redeploy and purge the cache.
+- Site has its own pull-to-refresh: leave `pullToRefresh.enabled` as `"auto"`, or add `<meta name="twa-ptr" content="off">`.
+- Strict zoom check is skipped on build when `webRoot` exists locally (the site may not be deployed yet): always run `npm run check-viewport` after deploying.
 
 ---
 
@@ -326,6 +448,7 @@ npm run build -- --profile myapp && npm run sign -- --profile myapp && npm run v
 | `npm run patch -- --profile <name>` | Force-patches `build.gradle` SDK versions |
 | `npm run patch-theme -- --profile <name>` | Force-patches remaining default (non-themed) splash/notification colors |
 | `npm run check-viewport -- --profile <name>` | Checks the live site disables pinch-zoom via its viewport tag |
+| `npm run gen-web -- --profile <name>` | Writes `twa-mobile.js`/head snippet/manifest patch; installs them into `webRoot` if set |
 | `npm run sign -- --profile <name> --generate-key` | Creates a new keystore |
 | `node scripts/sign.js --profile <name> --import-existing <path>` | Imports an existing keystore (e.g. from PWABuilder) |
 | `npm run sign -- --profile <name>` | Signs the built AAB |
@@ -374,6 +497,15 @@ webtwa verify --profile myapp
   "enableNotifications": true,
   "features": {},
   "shortcuts": [],                        // app shortcuts, optional
+
+  "mobileOnly": true,                     // never use the desktop layout inside the app
+  "viewport": "width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
+  "pullToRefresh": { "enabled": "auto", "threshold": 70, "background": "#fff", "backgroundDark": "#000", "border": "#000", "borderDark": "#fff", "ring": "#000", "ringDark": "#fff" },
+  "progressBar": { "enabled": true, "height": 3, "color": "#000", "colorDark": "#fff" },
+  "ui": { "nativeTheme": true, "safeArea": "auto", "lockContextMenu": true, "lockSelection": false },
+  "webRoot": "",                         // optional: your site's public folder, enables auto-install of web files
+  "webHtml": [],                          // optional: HTML files (relative to webRoot) to inject the head snippet into
+  "webManifestPath": "",                  // optional: manifest path relative to webRoot
 
   "signingKey": {
     "path": "keystores/example.jks",      // relative to project root

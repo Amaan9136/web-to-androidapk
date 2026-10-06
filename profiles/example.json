@@ -8,7 +8,7 @@
   "display": "standalone",
   "orientation": "default",
   "mobileOnly": true,
-  "viewport": "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
+  "viewport": "width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
 
   "webManifestUrl": "https://example.com/manifest.json",
   "startUrl": "/",
@@ -33,11 +33,21 @@
   "additionalTrustedOrigins": [],
   "splashScreenFadeOutDuration": 300,
   "pullToRefresh": {
-    "enabled": true,
+    "enabled": "auto",
     "threshold": 70,
-    "accent": "#000000",
-    "accentDark": "#ffffff"
+    "background": "#ffffff",
+    "backgroundDark": "#000000",
+    "border": "#000000",
+    "borderDark": "#ffffff",
+    "ring": "#000000",
+    "ringDark": "#ffffff"
   },
+  "progressBar": { "enabled": true, "height": 3, "color": "#000000", "colorDark": "#ffffff" },
+  "ui": { "nativeTheme": true, "safeArea": "auto", "lockContextMenu": true, "lockSelection": false },
+  "_webRoot_comment": "Optional. DUMMY PATH - replace with your site's public/static folder (Next.js: <project>/public) or leave empty. If set and it exists, build/gen-web copies twa-mobile.js there and merges the manifest patch. Leave webHtml [] for Next.js, Nuxt, SvelteKit, Remix and other frameworks (put the snippet in your layout instead, see RUN.md 4c); use e.g. [\"index.html\"] only for plain static HTML sites. Leave webManifestPath empty unless your manifest is not public/manifest.json or public/manifest.webmanifest.",
+  "webRoot": "C:/projects/my-site/public",
+  "webHtml": [],
+  "webManifestPath": "",
   "features": {},
   "shortcuts": [],
 

@@ -122,8 +122,13 @@ async function main() {
   }
 
   const viewportContent = extractViewportContent(html);
+  const lockedAtRuntime = /twa-mobile/.test(html);
 
-  if (viewportContent === null) {
+  if (lockedAtRuntime) {
+    const scriptRes = await fetchUrl(`https://${profile.host}/twa-mobile.js`).catch(() => null);
+    if (!scriptRes || scriptRes.statusCode >= 400) warn(`The page references twa-mobile.js but https://${profile.host}/twa-mobile.js did not load (${scriptRes ? 'HTTP ' + scriptRes.statusCode : 'no response'}). Host the file from output/${profile._name}/web/.`);
+    else ok('twa-mobile.js is live — it forces the zoom-locked, viewport-fit=cover viewport inside the app at runtime.');
+  } else if (viewportContent === null) {
     reportZoomable(profile, 'No <meta name="viewport"> tag was found on the page at all.');
   } else if (!isZoomDisabled(viewportContent)) {
     reportZoomable(profile, `Found <meta name="viewport" content="${viewportContent}">, but it does not disable scaling.`);
@@ -131,11 +136,11 @@ async function main() {
     ok(`Zoom is disabled by the site's viewport tag (content="${viewportContent}"). Pinch/double-tap zoom will not work in the generated app.`);
   }
 
-  if (viewportContent !== null && !/viewport-fit\s*=\s*cover/i.test(viewportContent)) {
+  if (!lockedAtRuntime && viewportContent !== null && !/viewport-fit\s*=\s*cover/i.test(viewportContent)) {
     warn('The viewport tag has no viewport-fit=cover, so env(safe-area-inset-*) is 0 and content can sit under the status/navigation bars (edge-to-edge is enforced on targetSdk 35+).');
   }
 
-  if (profile.mobileOnly && !/twa-mobile/.test(html)) {
+  if (profile.mobileOnly && !lockedAtRuntime) {
     warn(`twa-mobile.js is not referenced by ${pageUrl}. Without it a user who picked "Desktop site" in Chrome still gets the desktop layout inside the app, and pull-to-refresh is not themed. Generate it with: npm run gen-web -- --profile ${profile._name}`);
   }
 

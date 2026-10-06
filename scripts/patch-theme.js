@@ -88,9 +88,11 @@ function patchBarIconContrast(profile) {
   const targets = [
     { dir: 'values-v23', item: 'android:windowLightStatusBar', color: statusBarColor, label: 'status bar' },
     { dir: 'values-v27', item: 'android:windowLightNavigationBar', color: navBarColor, label: 'navigation bar' },
+    { dir: 'values-v27', item: 'android:enforceNavigationBarContrast', color: navBarColor, label: 'navigation bar scrim', fixed: 'false' },
+    { dir: 'values-v27', item: 'android:enforceStatusBarContrast', color: statusBarColor, label: 'status bar scrim', fixed: 'false' },
   ];
 
-  for (const { dir, item, color, label } of targets) {
+  for (const { dir, item, color, label, fixed } of targets) {
     const stylesPath = path.join(profile._outputDir, 'app', 'src', 'main', 'res', dir, 'styles.xml');
     if (!fs.existsSync(stylesPath)) {
       warn(`${dir}/styles.xml not found at ${stylesPath} — skipping ${label} icon contrast patch (verify manually).`);
@@ -100,7 +102,7 @@ function patchBarIconContrast(profile) {
     let content = fs.readFileSync(stylesPath, 'utf8');
     const original = content;
     const wantLightIcons = !isLightColor(color);
-    const value = wantLightIcons ? 'false' : 'true';
+    const value = fixed || (wantLightIcons ? 'false' : 'true');
 
     if (new RegExp(item).test(content)) {
       content = content.replace(

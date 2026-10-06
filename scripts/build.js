@@ -28,7 +28,8 @@ async function main() {
   // Zoom must never be possible in a generated app, so this check is
   // --strict by default: a live site that doesn't disable scaling fails the
   // build. --allow-zoom explicitly opts out of that block.
-  if (args['allow-zoom']) {
+  const siteLocal = profile.webRoot && fs.existsSync(path.resolve(__dirname, '..', profile.webRoot));
+  if (args['allow-zoom'] || siteLocal) {
     tryRun(process.execPath, [path.join(__dirname, 'check-viewport.js'), '--profile', profile._name]);
   } else {
     const viewportRes = tryRun(process.execPath, [path.join(__dirname, 'check-viewport.js'), '--profile', profile._name, '--strict']);

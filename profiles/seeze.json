@@ -6,7 +6,7 @@
   "display": "standalone",
   "orientation": "default",
   "mobileOnly": true,
-  "viewport": "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
+  "viewport": "width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
 
   "webManifestUrl": "https://seeze.automatech.live/manifest.json",
   "startUrl": "/",
@@ -31,11 +31,20 @@
   "additionalTrustedOrigins": [],
   "splashScreenFadeOutDuration": 300,
   "pullToRefresh": {
-    "enabled": true,
+    "enabled": "auto",
     "threshold": 70,
-    "accent": "#8c5a3c",
-    "accentDark": "#c99a78"
+    "background": "#f7f3eb",
+    "backgroundDark": "#2a1f18",
+    "border": "#8c5a3c",
+    "borderDark": "#c99a78",
+    "ring": "#8c5a3c",
+    "ringDark": "#c99a78"
   },
+  "progressBar": { "enabled": true, "height": 3, "color": "#8c5a3c", "colorDark": "#c99a78" },
+  "ui": { "nativeTheme": true, "safeArea": "auto", "lockContextMenu": true, "lockSelection": false },
+  "webRoot": "D:/0 AMAAN MAIN/Codes and Tools/My NextJS/seeze",
+  "webHtml": [],
+  "webManifestPath": "",
   "features": {},
   "shortcuts": [
     {

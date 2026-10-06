@@ -73,6 +73,12 @@ Do this:
        explain the tradeoff if I ask)
      - Fallback type: customtabs or webview
      - Whether to enable notifications
+     - My site's framework/architecture and the path to its public/static
+       folder (webRoot). Keep webHtml [] and webManifestPath "" unless it is
+       plain static HTML. Then follow RUN.md section 4c for that framework
+       (where the script tag and viewport go); if I have no local site,
+       tell me those steps are manual
+     - Theme colors for pull-to-refresh and the progress bar (light and dark)
    Either way, still ask me one at a time about anything a manifest can't
    supply: profile name, packageId, host, launcherName, appVersionName,
    appVersionCode, minSdkVersion, fallbackType, and notifications.
@@ -110,6 +116,8 @@ Do this:
     served as application/json, HTTPS, no redirects) and why it matters
     (without it my app shows a browser address bar instead of opening
     fullscreen).
+10b. Remind me that the site must be deployed with twa-mobile.js live (the app
+    loads the live site) and that `npm run check-viewport` should pass.
 11. Tell me exactly where the final .aab landed
     (output/<mysite>/app/build/outputs/bundle/release/app-release.aab) and
     what to do with it in Google Play Console (Production/Testing track →
