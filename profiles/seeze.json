@@ -69,7 +69,7 @@
 
   "signingKey": {
     "path": "keystores/seeze.jks",
-    "alias": "seeze",
+    "alias": "my-key-alias",
     "dn": "CN=Seeze, OU=Engineering, O=Automatech, L=Unknown, S=Unknown, C=IN"
   },
 

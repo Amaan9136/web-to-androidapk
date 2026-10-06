@@ -25,6 +25,7 @@ const path = require('path');
 const readline = require('readline');
 const { parseArgs } = require('../lib/args');
 const { loadProfile } = require('../lib/profile');
+const { spawnSync } = require('child_process');
 const { log, ok, warn, fail, run, apksignerCommand } = require('../lib/shell');
 
 function prompt(question, hidden = false) {
@@ -108,6 +109,29 @@ async function getPasswords() {
   return { ksPass, keyPass };
 }
 
+function resolveAlias(profile, ksPass) {
+  const res = spawnSync('keytool', ['-list', '-keystore', profile._keystorePath, '-storepass', ksPass], { encoding: 'utf8' });
+  const out = `${res.stdout || ''}${res.stderr || ''}`;
+  if (res.error || res.status !== 0) {
+    throw new Error(`Could not open keystore ${profile._keystorePath} with keytool. Check the keystore password.\n${out.trim() || (res.error && res.error.message) || ''}`);
+  }
+  const entries = [...out.matchAll(/^(.+?), .*,\s*(PrivateKeyEntry|trustedCertEntry|SecretKeyEntry),/gm)].map((m) => ({ alias: m[1], type: m[2] }));
+  const keys = entries.filter((e) => e.type === 'PrivateKeyEntry').map((e) => e.alias);
+  const wanted = profile.signingKey.alias;
+  const match = keys.find((a) => a.toLowerCase() === wanted.toLowerCase());
+  if (match) return match;
+  if (keys.length === 1) {
+    warn(`Alias "${wanted}" is not a private key in this keystore. Using the only key alias found: "${keys[0]}".`);
+    warn(`Set "signingKey.alias" to "${keys[0]}" in profiles/${profile._name}.json to remove this warning.`);
+    return keys[0];
+  }
+  throw new Error(
+    `Alias "${wanted}" is not a private key in ${profile._keystorePath}. ` +
+    `Aliases found: ${entries.map((e) => `${e.alias} (${e.type})`).join(', ') || 'none'}. ` +
+    `Set "signingKey.alias" in profiles/${profile._name}.json to the PrivateKeyEntry alias.`
+  );
+}
+
 async function generateKey(profile) {
   if (fs.existsSync(profile._keystorePath)) {
     fail(`Keystore already exists at ${profile._keystorePath}. Refusing to overwrite — move or delete it first if you really want a new one.`);
@@ -148,6 +172,7 @@ async function signFile(profile, filePath) {
     process.exit(1);
   }
   const { ksPass, keyPass } = await getPasswords();
+  const alias = resolveAlias(profile, ksPass);
 
   if (filePath.endsWith('.aab')) {
     // AABs are signed with jarsigner (same as JAR signing).
@@ -159,7 +184,7 @@ async function signFile(profile, filePath) {
       '-storepass', ksPass,
       '-keypass', keyPass,
       filePath,
-      profile.signingKey.alias,
+      alias,
     ]);
     ok(`Signed AAB: ${filePath}`);
     log('Upload this .aab directly to Google Play Console.');
@@ -175,7 +200,7 @@ async function signFile(profile, filePath) {
       ...signerPre,
       'sign',
       '--ks', profile._keystorePath,
-      '--ks-key-alias', profile.signingKey.alias,
+      '--ks-key-alias', alias,
       '--ks-pass', `pass:${ksPass}`,
       '--key-pass', `pass:${keyPass}`,
       ...(outPath !== filePath ? ['--out', outPath] : []),
