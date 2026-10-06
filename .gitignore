@@ -4,6 +4,7 @@ node_modules/
 # Generated Android projects & build artifacts
 output/*
 !output/.gitkeep
+!output/OUTPUT_README.md
 
 # Keystores and secrets — NEVER commit these
 keystores/*.jks
